@@ -3,12 +3,16 @@ const express = require("express");
 const server = express();
 server.use(express.json());
 
+let numberRequests = 0;
 const projects = [];
 
 //Middlewares Global - Contador
 server.use((req, res, next) => {
+  numberRequests++;
+
   console.time("Request");
 
+  console.log(`O servidor ja recebeu ${numberRequests} requisições.`);
   console.log(`Método ${req.method}; URL: ${req.url}`);
 
   next();
@@ -69,10 +73,32 @@ server.post("/projects", checkArrayComplete, projectDuplicate, (req, res) => {
   return res.json(projects);
 });
 
-server.put("projects/:id", checkProjectAlreadyExists, (req, res) => {});
+server.put("/projects/:id", checkProjectAlreadyExists, (req, res) => {
+  const { title } = req.body;
+  if (!title) {
+    return res.status(400).json({ error: "Title is required to update." });
+  }
 
-server.delete("projects/:id", checkProjectAlreadyExists, (req, res) => {});
+  req.project.title = title;
 
-server.post("projects/:id/tasks", checkProjectAlreadyExists, (req, res) => {});
+  return res.json(req.project);
+});
+
+server.delete("/projects/:id", checkProjectAlreadyExists, (req, res) => {
+  const index = projects.indexOf(req.project);
+  projects.splice(index, 1);
+  return res.json(projects);
+});
+
+server.post("/projects/:id/tasks", checkProjectAlreadyExists, (req, res) => {
+  const { title } = req.body;
+  if (!title) {
+    return res.status(400).json({ error: "Task title is required." });
+  }
+
+  req.project.tasks.push(title);
+
+  return res.json(req.project);
+});
 
 server.listen(3000);
