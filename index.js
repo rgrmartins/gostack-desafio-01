@@ -3,13 +3,7 @@ const express = require("express");
 const server = express();
 server.use(express.json());
 
-const projects = [
-  {
-    id: "2",
-    title: "Novo Projeto",
-    tasks: ["Nova Tarefa"]
-  }
-];
+const projects = [];
 
 //Middlewares Global - Contador
 server.use((req, res, next) => {
@@ -23,22 +17,25 @@ server.use((req, res, next) => {
 
 function checkProjectAlreadyExists(req, res, next) {
   const { id } = req.params;
-  projects.map(pro => {
-    if (pro.id === id) {
-      req.project = pro;
-      return next();
-    }
-  });
-  return res.status(400).json({ error: "Project does not exists." });
+
+  const project = projects.find(pro => pro.id === id);
+
+  if (!project) {
+    return res.status(400).json({ error: "Project does not exists." });
+  } else {
+    req.project = project;
+    return next();
+  }
 }
 
 function projectDuplicate(req, res, next) {
   const { id } = req.body;
-  projects.map(pro => {
-    if (pro.id === id) {
-      return res.status(400).json({ error: "Project Already Exists." });
-    }
-  });
+
+  const project = projects.find(pro => pro.id === id);
+
+  if (project) {
+    return res.status(400).json({ error: "Project Already Exists." });
+  }
 
   return next();
 }
@@ -59,7 +56,7 @@ server.get("/projects/:id", checkProjectAlreadyExists, (req, res) => {
   return res.json(req.project);
 });
 
-server.post("/projects", projectDuplicate, checkArrayComplete, (req, res) => {
+server.post("/projects", checkArrayComplete, projectDuplicate, (req, res) => {
   const { id, title } = req.body;
 
   const newProject = {
@@ -71,5 +68,11 @@ server.post("/projects", projectDuplicate, checkArrayComplete, (req, res) => {
   projects.push(newProject);
   return res.json(projects);
 });
+
+server.put("projects/:id", checkProjectAlreadyExists, (req, res) => {});
+
+server.delete("projects/:id", checkProjectAlreadyExists, (req, res) => {});
+
+server.post("projects/:id/tasks", checkProjectAlreadyExists, (req, res) => {});
 
 server.listen(3000);
